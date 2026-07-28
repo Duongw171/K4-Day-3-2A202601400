@@ -41,7 +41,7 @@
       "difficulty": "🟡",
       "question": "Ứng viên mã CV-2078 (Trần Thị B) có đáp ứng đủ yêu cầu cho vị trí Data Analyst không? Nếu đủ điều kiện, hãy đặt lịch phỏng vấn với anh Minh vào 14h thứ Năm tuần sau.",
       "purpose": "Phụ thuộc chuỗi 2 bước: tra hồ sơ + đối chiếu yêu cầu vị trí, rồi mới quyết định có đặt lịch hay không.",
-      "expected_agent_behavior": "Action 1: get_candidate_profile('CV-2078') → Observation 1. Action 2: check_job_requirements('Data Analyst') → Observation 2. Nếu match → Action 3: schedule_interview(...) → Final Answer tổng hợp cả 2 nguồn dữ liệu.",
+      "expected_agent_behavior": "Action 1: get_candidate_profile('CV-2078')→ Observation 1. Action 2: check_job_requirements('Data Analyst') → Observation 2. Nếu match → Action 3: schedule_interview(...) → Final Answer tổng hợp cả 2 nguồn dữ liệu.",
       "requires_tool": true,
       "tools_expected": [
         "get_candidate_profile",
