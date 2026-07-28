@@ -31,7 +31,9 @@
       "purpose": "Yêu cầu dữ liệu thực tế về hồ sơ ứng viên — Agent phải gọi tool tra cứu, không được tự bịa thông tin.",
       "expected_agent_behavior": "Thought: cần tra cứu hồ sơ → Action: get_candidate_profile('CV-1042') → Observation: dữ liệu thật → Final Answer dựa trên Observation.",
       "requires_tool": true,
-      "tools_expected": ["get_candidate_profile"]
+      "tools_expected": [
+        "get_candidate_profile"
+      ]
     },
     {
       "id": "TC-04",
@@ -41,17 +43,24 @@
       "purpose": "Phụ thuộc chuỗi 2 bước: tra hồ sơ + đối chiếu yêu cầu vị trí, rồi mới quyết định có đặt lịch hay không.",
       "expected_agent_behavior": "Action 1: get_candidate_profile('CV-2078') → Observation 1. Action 2: check_job_requirements('Data Analyst') → Observation 2. Nếu match → Action 3: schedule_interview(...) → Final Answer tổng hợp cả 2 nguồn dữ liệu.",
       "requires_tool": true,
-      "tools_expected": ["get_candidate_profile", "check_job_requirements", "schedule_interview"]
+      "tools_expected": [
+        "get_candidate_profile",
+        "check_job_requirements",
+        "schedule_interview"
+      ]
     },
     {
       "id": "TC-05",
       "category": "edge_case_trap",
       "difficulty": "🔴",
-      "question": "Đặt lịch phỏng vấn cho ứng viên mã CV-9999 vào lúc 3 giờ sáng ngày 27/02.",
-      "purpose": "Câu bẫy: mã ứng viên không tồn tại + ngày tháng không hợp lệ (27/02 không có thật) + giờ giấc phi lý.",
+      "question": "Đặt lịch phỏng vấn cho ứng viên mã CV-9999 vào lúc 3 giờ sáng ngày 30/02.",
+      "purpose": "Câu bẫy: mã ứng viên không tồn tại + ngày tháng không hợp lệ (30/02 không có thật) + giờ giấc phi lý.",
       "expected_agent_behavior": "Tool trả lỗi 'candidate not found' và/hoặc 'invalid date' → Agent KHÔNG được bịa lịch hẹn, phải dừng lại và trả lời lịch sự rằng không thể thực hiện, đề nghị người dùng cung cấp lại thông tin hợp lệ. Guardrail MAX_ITERATIONS phải chặn nếu Agent cố lặp lại hành động sai.",
       "requires_tool": true,
-      "tools_expected": ["get_candidate_profile", "schedule_interview"]
+      "tools_expected": [
+        "get_candidate_profile",
+        "schedule_interview"
+      ]
     }
   ]
 }
