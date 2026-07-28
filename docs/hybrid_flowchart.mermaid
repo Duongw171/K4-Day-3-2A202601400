@@ -1,0 +1,40 @@
+flowchart TD
+    %% Styling
+    classDef startEnd fill:#F5F5F5,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef process fill:#E3F2FD,stroke:#1565C0,stroke-width:1px;
+    classDef decision fill:#FFF9C4,stroke:#FBC02D,stroke-width:1px;
+    classDef agent fill:#E8F5E9,stroke:#2E7D32,stroke-width:1px;
+    classDef chatbot fill:#FFE0B2,stroke:#E65100,stroke-width:1px;
+
+    Start([Bắt đầu: User Query]) :::startEnd
+    Classifier{Phân loại yêu cầu:<br/>Cần dữ liệu thực tế / thực thi công cụ?} :::decision
+
+    %% Chatbot Path
+    Classifier -->|Không: Câu hỏi lý thuyết / Quy định chung| ChatbotPath[Định tuyến: Chatbot Baseline] :::chatbot
+    ChatbotPath --> ChatbotCall[Gọi LLM sinh câu trả lời trực tiếp] :::chatbot
+    ChatbotCall --> EndChatbot([Trả kết quả cho người dùng]) :::startEnd
+
+    %% Agent Path
+    Classifier -->|Có: Đọc CV / Khớp JD / Đặt lịch| AgentPath[Định tuyến: ReAct Agent Loop] :::agent
+    AgentPath --> InitContext[Khởi tạo ngữ cảnh: Context = Query] :::agent
+    
+    %% Loop
+    LoopStart{Vòng lặp ReAct:<br/>Step < MAX_ITERATIONS?} :::decision
+    InitContext --> LoopStart
+    
+    LoopStart -->|Có| CallAgentLLM[Gọi LLM sinh phân tích Thought & Action] :::agent
+    CallAgentLLM --> ParseOutput{Phát hiện mẫu?<br/>Action hoặc Final Answer} :::decision
+    
+    ParseOutput -->|Action: tool_name[args]| ExecuteTool[Thực thi công cụ tương ứng] :::process
+    ExecuteTool --> GetObs[Nhận kết quả Observation từ công cụ] :::process
+    GetObs --> AppendObs[Thêm Observation vào Context] :::agent
+    AppendObs --> IncrementStep[Tăng Step thêm 1] :::agent
+    IncrementStep --> LoopStart
+
+    ParseOutput -->|Final Answer: ...| FinishAgent[Trích xuất Câu trả lời cuối cùng] :::agent
+    FinishAgent --> EndAgent([Trả kết quả cho người dùng]) :::startEnd
+
+    %% Guardrail Path
+    LoopStart -->|Không| GuardrailTrigger[Kích hoạt Phanh Guardrail:<br/>MAX_ITERATIONS Exceeded] :::process
+    GuardrailTrigger --> FallbackAnswer[Sinh câu trả lời an toàn / Hẹn kiểm tra lại] :::process
+    FallbackAnswer --> EndAgent
