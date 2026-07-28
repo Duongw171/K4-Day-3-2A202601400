@@ -140,6 +140,32 @@ class MockProvider(BaseLLMProvider):
         return "🤖 [Mock Provider]: Phản hồi giả lập offline cho bài test."
 
 
+class GroqProvider(BaseLLMProvider):
+    """Groq Provider (Llama, Mixtral, etc. via OpenAI compatibility)"""
+    def __init__(self, api_key: str = None, model: str = None):
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        self.model_name = model or os.getenv("LLM_MODEL") or "llama-3.3-70b-versatile"
+        
+    def generate(self, prompt: str, system_prompt: str = "") -> str:
+        if not self.api_key or self.api_key == "your_groq_api_key_here":
+            return "[Groq Error]: Chưa cấu hình GROQ_API_KEY trong file .env!"
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self.api_key, base_url="https://api.groq.com/openai/v1")
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            
+            response = client.chat.completions.create(
+                model=self.model_name,
+                messages=messages
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"[Groq Exception]: {str(e)}"
+
+
 def get_llm_provider(provider_name: str = None) -> BaseLLMProvider:
     """Factory function tự chọn Provider từ biến môi trường LLM_PROVIDER"""
     name = (provider_name or os.getenv("LLM_PROVIDER") or "mock").lower().strip()
@@ -152,6 +178,8 @@ def get_llm_provider(provider_name: str = None) -> BaseLLMProvider:
         return AnthropicProvider()
     elif name == "openrouter":
         return OpenRouterProvider()
+    elif name == "groq":
+        return GroqProvider()
     else:
         return MockProvider()
 
