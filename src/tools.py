@@ -1,124 +1,227 @@
 """
 🛠️ TOOL REGISTRY & SCHEMAS (Dành cho Role 2: Tool & Spec Engineer)
+Đề bài 9: Trợ Lý Sàng Lọc Hồ Sơ Tuyển Dụng & Hẹn Phỏng Vấn
+
 Nơi khai báo tất cả các "món đồ nghề" mà ReAct Agent có thể gọi.
 """
 
+from datetime import datetime
+import re
 
-def parse_resume(resume_text: str) -> str:
+
+# ============================================================
+# 📦 MOCK DATABASE (giả lập dữ liệu ứng viên & yêu cầu vị trí)
+# ============================================================
+
+CANDIDATE_DB = {
+    "CV-1042": {
+        "name": "Nguyễn Văn A",
+        "position_applied": "Backend Developer",
+        "skills": ["Python", "SQL", "Django", "Git"],
+        "experience_years": 3,
+        "education": "Cử nhân Khoa học Máy tính",
+    },
+    "CV-2078": {
+        "name": "Trần Thị B",
+        "position_applied": "Data Analyst",
+        "skills": ["SQL", "Excel", "Power BI", "Python"],
+        "experience_years": 2,
+        "education": "Cử nhân Thống kê",
+    },
+}
+
+JOB_REQUIREMENTS_DB = {
+    "Backend Developer": {
+        "required_skills": ["Python", "SQL", "Django"],
+        "min_experience_years": 2,
+    },
+    "Data Analyst": {
+        "required_skills": ["SQL", "Excel", "Power BI"],
+        "min_experience_years": 1,
+    },
+    "Frontend Developer": {
+        "required_skills": ["JavaScript", "React", "CSS"],
+        "min_experience_years": 1,
+    },
+}
+
+# Lưu các lịch phỏng vấn đã đặt (giả lập)
+SCHEDULED_INTERVIEWS = []
+
+
+# ============================================================
+# 🔧 TOOLS
+# ============================================================
+
+def get_candidate_profile(candidate_id: str) -> str:
     """
-    Trích xuất thông tin chính từ hồ sơ ứng viên.
+    Tra cứu hồ sơ ứng viên theo mã CV trong hệ thống.
 
     Args:
-        resume_text (str): Nội dung văn bản của CV / hồ sơ.
+        candidate_id (str): Mã hồ sơ ứng viên (Ví dụ: 'CV-1042').
 
     Returns:
-        str: Tóm tắt kỹ năng, kinh nghiệm, học vấn, và điểm mạnh chính.
+        str: Thông tin chi tiết ứng viên (tên, vị trí ứng tuyển, kỹ năng,
+             số năm kinh nghiệm, học vấn), hoặc thông báo lỗi nếu không
+             tìm thấy mã ứng viên trong hệ thống.
     """
-    if not resume_text or not resume_text.strip():
-        return "LỖI: Nội dung hồ sơ rỗng hoặc không hợp lệ."
+    if not candidate_id or not candidate_id.strip():
+        return "LỖI: Vui lòng cung cấp mã ứng viên."
 
-    # Mô phỏng phân tích resume cho ví dụ.
+    candidate_id = candidate_id.strip().upper()
+    profile = CANDIDATE_DB.get(candidate_id)
+
+    if not profile:
+        return f"LỖI: Không tìm thấy ứng viên với mã '{candidate_id}' trong hệ thống."
+
     return (
-        "Tóm tắt hồ sơ ứng viên:\n"
-        "- Kỹ năng chính: Python, Phân tích dữ liệu, Quản lý dự án\n"
-        "- Kinh nghiệm: 3 năm tuyển dụng IT, phỏng vấn kỹ thuật, sàng lọc CV\n"
-        "- Học vấn: Cử nhân Quản trị Nhân sự / Khoa học Máy tính\n"
-        "- Điểm mạnh: Giao tiếp tốt, đánh giá phù hợp năng lực, sắp xếp lịch phỏng vấn."
+        f"Hồ sơ ứng viên {candidate_id}:\n"
+        f"- Họ tên: {profile['name']}\n"
+        f"- Vị trí ứng tuyển: {profile['position_applied']}\n"
+        f"- Kỹ năng: {', '.join(profile['skills'])}\n"
+        f"- Kinh nghiệm: {profile['experience_years']} năm\n"
+        f"- Học vấn: {profile['education']}"
     )
 
 
-def screen_candidate(candidate_profile: str, job_description: str) -> str:
+def check_job_requirements(job_title: str) -> str:
     """
-    Đánh giá sơ bộ mức độ phù hợp của ứng viên với mô tả công việc.
+    Tra cứu yêu cầu tuyển dụng (kỹ năng bắt buộc, số năm kinh nghiệm tối thiểu)
+    cho một vị trí công việc cụ thể.
 
     Args:
-        candidate_profile (str): Thông tin ứng viên đã được trích xuất.
-        job_description (str): Mô tả yêu cầu công việc.
+        job_title (str): Tên vị trí tuyển dụng (Ví dụ: 'Data Analyst').
 
     Returns:
-        str: Nhận xét về mức độ phù hợp và đề xuất bước tiếp theo.
+        str: Danh sách yêu cầu của vị trí, hoặc lỗi nếu vị trí không tồn tại
+             trong hệ thống.
     """
-    if not candidate_profile or not job_description:
-        return "LỖI: Thiếu profile ứng viên hoặc mô tả công việc."
+    if not job_title or not job_title.strip():
+        return "LỖI: Vui lòng cung cấp tên vị trí tuyển dụng."
 
-    if "tuyển dụng" in job_description.lower() or "phỏng vấn" in job_description.lower():
+    job_title_clean = job_title.strip()
+    req = JOB_REQUIREMENTS_DB.get(job_title_clean)
+
+    if not req:
+        available = ", ".join(JOB_REQUIREMENTS_DB.keys())
         return (
-            "Ứng viên có phù hợp sơ bộ với yêu cầu tuyển dụng.\n"
-            "Đề xuất: Tiếp tục vào vòng phỏng vấn kỹ thuật và đánh giá kỹ năng mềm."
+            f"LỖI: Không tìm thấy yêu cầu tuyển dụng cho vị trí '{job_title}'. "
+            f"Các vị trí hiện có: {available}."
         )
 
     return (
-        "Ứng viên có một số điểm phù hợp nhưng cần thảo luận thêm với người tuyển dụng.\n"
-        "Đề xuất: kiểm tra chi tiết yêu cầu công việc và kỹ năng chuyên môn."
+        f"Yêu cầu tuyển dụng cho vị trí {job_title_clean}:\n"
+        f"- Kỹ năng bắt buộc: {', '.join(req['required_skills'])}\n"
+        f"- Kinh nghiệm tối thiểu: {req['min_experience_years']} năm"
     )
 
 
-def extract_skills(resume_text: str) -> str:
+def schedule_interview(candidate_id: str, interviewer_name: str, interview_datetime: str) -> str:
     """
-    Liệt kê kỹ năng chính từ hồ sơ ứng viên.
+    Đặt lịch phỏng vấn cho ứng viên. Tool sẽ TỰ VALIDATE:
+    - Mã ứng viên phải tồn tại trong hệ thống (kiểm tra qua CANDIDATE_DB).
+    - Ngày giờ phỏng vấn phải hợp lệ (đúng định dạng, ngày tháng có thật,
+      giờ giấc hợp lý trong khung 07:00 - 20:00).
+    Nếu bất kỳ điều kiện nào không thỏa, tool trả về lỗi và KHÔNG tạo lịch hẹn.
 
     Args:
-        resume_text (str): Nội dung hồ sơ ứng viên.
+        candidate_id (str): Mã ứng viên (Ví dụ: 'CV-2078').
+        interviewer_name (str): Tên người phỏng vấn (Ví dụ: 'Anh Minh').
+        interview_datetime (str): Ngày giờ phỏng vấn theo định dạng
+            'DD/MM/YYYY HH:MM' (Ví dụ: '05/11/2025 14:00').
 
     Returns:
-        str: Danh sách kỹ năng liên quan đến vị trí tuyển dụng.
+        str: Xác nhận đặt lịch thành công, hoặc thông báo lỗi rõ ràng
+             (candidate not found / invalid date / invalid time) nếu
+             không thể đặt lịch.
     """
-    if not resume_text or not resume_text.strip():
-        return "LỖI: Nội dung hồ sơ rỗng hoặc không hợp lệ."
+    if not candidate_id or not interviewer_name or not interview_datetime:
+        return "LỖI: Thiếu thông tin (mã ứng viên / người phỏng vấn / thời gian)."
+
+    candidate_id = candidate_id.strip().upper()
+
+    # 1. Validate ứng viên có tồn tại không
+    if candidate_id not in CANDIDATE_DB:
+        return f"LỖI: candidate not found - Không tìm thấy ứng viên với mã '{candidate_id}'. Không thể đặt lịch."
+
+    # 2. Validate định dạng & tính hợp lệ của ngày giờ
+    dt_str = interview_datetime.strip()
+    match = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2})$", dt_str)
+    if not match:
+        return (
+            f"LỖI: invalid date format - '{interview_datetime}' không đúng định dạng "
+            f"'DD/MM/YYYY HH:MM'. Không thể đặt lịch."
+        )
+
+    day, month, year, hour, minute = map(int, match.groups())
+
+    try:
+        parsed_dt = datetime(year=year, month=month, day=day, hour=hour, minute=minute)
+    except ValueError:
+        return (
+            f"LỖI: invalid date - '{interview_datetime}' không phải là ngày giờ có thật "
+            f"(ví dụ: ngày/tháng không tồn tại). Không thể đặt lịch."
+        )
+
+    # 3. Validate giờ giấc hợp lý (giờ hành chính mở rộng: 07:00 - 20:00)
+    if not (7 <= parsed_dt.hour < 20):
+        return (
+            f"LỖI: invalid time - Giờ phỏng vấn '{parsed_dt.strftime('%H:%M')}' nằm ngoài "
+            f"khung giờ làm việc hợp lý (07:00 - 20:00). Không thể đặt lịch."
+        )
+
+    # 4. Validate không đặt lịch trong quá khứ
+    if parsed_dt < datetime.now():
+        return f"LỖI: invalid date - Thời gian '{dt_str}' đã ở trong quá khứ. Không thể đặt lịch."
+
+    # Mọi điều kiện hợp lệ -> tạo lịch hẹn
+    candidate_name = CANDIDATE_DB[candidate_id]["name"]
+    SCHEDULED_INTERVIEWS.append({
+        "candidate_id": candidate_id,
+        "candidate_name": candidate_name,
+        "interviewer": interviewer_name,
+        "datetime": parsed_dt.strftime("%d/%m/%Y %H:%M"),
+    })
 
     return (
-        "Kỹ năng tìm được:\n"
-        "- Tuyển dụng và sàng lọc hồ sơ\n"
-        "- Phỏng vấn ứng viên\n"
-        "- Quản lý lịch phỏng vấn\n"
-        "- Giao tiếp và thuyết trình\n"
+        f"Đã đặt lịch phỏng vấn thành công:\n"
+        f"- Ứng viên: {candidate_name} ({candidate_id})\n"
+        f"- Người phỏng vấn: {interviewer_name}\n"
+        f"- Thời gian: {parsed_dt.strftime('%d/%m/%Y %H:%M')}"
     )
 
 
-def match_candidate_to_role(candidate_profile: str, job_description: str) -> str:
+# ============================================================
+# 🔧 TOOLS PHỤ TRỢ (giữ lại để mở rộng, không nằm trong
+# tools_expected của các test case hiện tại nhưng hữu ích cho
+# các luồng hội thoại khác)
+# ============================================================
+
+def extract_skills(candidate_id: str) -> str:
     """
-    So sánh ứng viên với yêu cầu công việc và đưa ra kết luận.
+    Liệt kê kỹ năng chính của ứng viên theo mã hồ sơ.
 
     Args:
-        candidate_profile (str): Hồ sơ ứng viên đã phân tích.
-        job_description (str): Mô tả công việc.
+        candidate_id (str): Mã ứng viên (Ví dụ: 'CV-1042').
 
     Returns:
-        str: Đánh giá cuối cùng và khuyến nghị.
+        str: Danh sách kỹ năng của ứng viên, hoặc lỗi nếu không tìm thấy.
     """
-    if not candidate_profile or not job_description:
-        return "LỖI: Thiếu profile ứng viên hoặc mô tả công việc."
+    if not candidate_id or not candidate_id.strip():
+        return "LỖI: Vui lòng cung cấp mã ứng viên."
 
-    return (
-        "Đánh giá kết hợp: Ứng viên phù hợp 70-80% với vai trò.\n"
-        "Khuyến nghị: mời vào vòng phỏng vấn và kiểm tra thêm về kỹ năng chuyên môn."
-    )
+    candidate_id = candidate_id.strip().upper()
+    profile = CANDIDATE_DB.get(candidate_id)
 
+    if not profile:
+        return f"LỖI: Không tìm thấy ứng viên với mã '{candidate_id}' trong hệ thống."
 
-def schedule_interview(candidate_name: str, preferred_times: str) -> str:
-    """
-    Tạo lịch hẹn phỏng vấn cho ứng viên.
-
-    Args:
-        candidate_name (str): Tên ứng viên.
-        preferred_times (str): Khung thời gian ứng viên mong muốn.
-
-    Returns:
-        str: Xác nhận lịch hẹn phỏng vấn.
-    """
-    if not candidate_name or not preferred_times:
-        return "LỖI: Thiếu tên ứng viên hoặc thời gian mong muốn."
-
-    return (
-        f"Đã đặt lịch phỏng vấn cho {candidate_name}.\n"
-        f"Thời gian đề xuất: {preferred_times}.\n"
-        "Vui lòng xác nhận lại với bộ phận nhân sự."
-    )
+    return f"Kỹ năng của {profile['name']} ({candidate_id}): {', '.join(profile['skills'])}"
 
 
 def generate_interview_questions(job_role: str) -> str:
     """
-    Sinh bộ câu hỏi phỏng vấn phù hợp với vị trí.
+    Sinh bộ câu hỏi phỏng vấn phù hợp với vị trí tuyển dụng.
 
     Args:
         job_role (str): Tên vị trí tuyển dụng.
@@ -131,18 +234,20 @@ def generate_interview_questions(job_role: str) -> str:
 
     return (
         f"Bộ câu hỏi phỏng vấn cho vị trí {job_role}:\n"
-        "1. Hãy mô tả kinh nghiệm của bạn trong tuyển dụng và sàng lọc hồ sơ.\n"
-        "2. Bạn ưu tiên yếu tố nào khi lựa chọn ứng viên phù hợp?\n"
-        "3. Làm sao bạn xử lý khi ứng viên có kỹ năng tốt nhưng văn hóa chưa phù hợp?\n"
+        "1. Hãy mô tả kinh nghiệm liên quan trực tiếp đến vị trí này.\n"
+        "2. Bạn đã từng xử lý tình huống khó trong công việc như thế nào?\n"
+        "3. Vì sao bạn phù hợp với vị trí và văn hóa công ty?\n"
     )
 
 
-# Danh sách các tool được đăng ký để Agent sử dụng
+# ============================================================
+# 📋 ĐĂNG KÝ TOOLS ĐỂ AGENT SỬ DỤNG
+# ============================================================
+
 AVAILABLE_TOOLS = {
-    "parse_resume": parse_resume,
-    "screen_candidate": screen_candidate,
-    "extract_skills": extract_skills,
-    "match_candidate_to_role": match_candidate_to_role,
+    "get_candidate_profile": get_candidate_profile,
+    "check_job_requirements": check_job_requirements,
     "schedule_interview": schedule_interview,
+    "extract_skills": extract_skills,
     "generate_interview_questions": generate_interview_questions,
 }
