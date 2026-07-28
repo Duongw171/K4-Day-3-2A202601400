@@ -1,7 +1,7 @@
 # Group Report: Lab 3 - Production-Grade Agentic System
 
 - **Team Name**: Nhóm Nguyễn Văn Dương
-- **Team Members**: Nguyễn Văn Dương (Role 1 - Trưởng nhóm) 2A202501400, Nguyễn Văn Tấn (Role 2) 2A202501246, Phạm Tiến Hưng (Role 3) 2A202501800, Phạm Hoàng Anh (Role 4) 2A202501368, Bùi Xuân Hòa (Role 5) 2A202501202
+- **Team Members**: Nguyễn Văn Dương (Role 1 - Trưởng nhóm), Nguyễn Văn Tấn (Role 2), Phạm Tiến Hưng (Role 3), Phạm Hoàng Anh (Role 4), Bùi Xuân Hòa (Role 5)
 - **Deployment Date**: 2026-07-28
 
 ---
